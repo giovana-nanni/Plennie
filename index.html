@@ -394,6 +394,7 @@ async function addGastoAvulso(){
     }
 
     estado.gastosAvulsos.push({
+      id: resultado.id,
       nome: nome,
       valor: valor
     });
@@ -410,9 +411,24 @@ async function addGastoAvulso(){
   }
 }
 
-function removerItem(tipo, idx) {
+async function removerItem(tipo, idx) {
   if (!confirm('Tem certeza de que deseja remover este item?')) {
     return;
+  }
+
+  // Gastos avulsos ficam no banco: remove primeiro no servidor.
+  var item = estado[tipo][idx];
+  if (tipo === 'gastosAvulsos' && item && item.id) {
+    try {
+      var resposta = await fetch('/api/despesas/' + item.id, { method: 'DELETE' });
+      if (!resposta.ok && resposta.status !== 404) {
+        throw new Error('Falha ao excluir no banco.');
+      }
+    } catch (erro) {
+      console.error(erro);
+      mostrarToast('⚠️ Não foi possível excluir no banco.', 'erro');
+      return;
+    }
   }
 
   estado[tipo].splice(idx, 1);
@@ -542,6 +558,21 @@ function formatarMoeda(valor) {
     });
 }
 
+// Evita que textos digitados pelo usuário sejam interpretados como HTML.
+function escaparHtml(texto) {
+    return String(texto == null ? '' : texto)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Aceita apenas links http:// ou https://.
+function linkSeguro(link) {
+    return /^https?:\/\//i.test(String(link || '').trim());
+}
+
 function atualizarTudo(){
   var tRec = 0, tParc = 0, tAvulso = 0;
   for (var i=0; i<estado.despesasRecorrentes.length; i++) tRec += Number(estado.despesasRecorrentes[i].valor) || 0;
@@ -559,17 +590,17 @@ function atualizarTudo(){
     '<p style="margin-top:8px; padding-top:8px; border-top:2px dashed #d2f0c2;"><strong>Saldo livre:</strong> ' + formatarMoeda(saldoLivre) + '</p>';
 
   document.getElementById('listaDespesasRecorrentes').innerHTML = estado.despesasRecorrentes.map(function(d,i){
-    return '<li><i class="fas fa-receipt"></i> ' + ' — ' + formatarMoeda(d.valor) + ' <span class="mini-badge">recorrente</span>' +
+    return '<li><i class="fas fa-receipt"></i> ' + escaparHtml(d.nome) + ' — ' + formatarMoeda(d.valor) + ' <span class="mini-badge">recorrente</span>' +
     '<button class="btn btn-danger" style="margin-left:auto;" onclick="removerItem(\'despesasRecorrentes\',' + i + ')">🗑️</button></li>';
   }).join('') || '<li style="color:#9aab8a; border-left-color:#eee;">Nenhuma despesa cadastrada.</li>';
 
   document.getElementById('listaDividas').innerHTML = estado.dividas.map(function(d,i){
-    return '<li><i class="fas fa-file-invoice"></i> ' + d.nome + ' — R$ ' + formatarMoeda(d.valorTotal) + ' (' + d.parcelasRestantes + 'x) parcela R$ ' + Number(d.parcelaMensal).toFixed(2) + ' <span class="mini-badge">parcelado</span>' +
+    return '<li><i class="fas fa-file-invoice"></i> ' + escaparHtml(d.nome) + ' — ' + formatarMoeda(d.valorTotal) + ' (' + d.parcelasRestantes + 'x) parcela ' + formatarMoeda(d.parcelaMensal) + ' <span class="mini-badge">parcelado</span>' +
     '<button class="btn btn-danger" style="margin-left:auto;" onclick="removerItem(\'dividas\',' + i + ')">🗑️</button></li>';
   }).join('') || '<li style="color:#9aab8a; border-left-color:#eee;">Nenhuma dívida cadastrada.</li>';
 
   document.getElementById('listaGastosAvulsos').innerHTML = estado.gastosAvulsos.map(function(g,i){
-    return '<li><i class="fas fa-tag"></i> ' + g.nome + ' — ' + formatarMoeda(g.valor) +
+    return '<li><i class="fas fa-tag"></i> ' + escaparHtml(g.nome) + ' — ' + formatarMoeda(g.valor) +
     '<button class="btn btn-danger" style="margin-left:auto;" onclick="removerItem(\'gastosAvulsos\',' + i + ')">🗑️</button></li>';
   }).join('') || '<li style="color:#9aab8a; border-left-color:#eee;">Nenhum gasto cadastrado.</li>';
 
@@ -577,8 +608,8 @@ function atualizarTudo(){
     var meses = saldoLivre > 0 ? Math.ceil(d.valor/saldoLivre) : null;
     var porMes = meses ? d.valor/meses : 0;
     var badge = meses ? '<span class="mini-badge">💰 R$ ' + porMes.toFixed(2) + '/mês x' + meses + '</span>' : '<span class="mini-badge" style="background:#FFE5E5;">⚠️ Sem saldo</span>';
-    var linkTxt = d.link ? ' <a href="' + d.link + '" target="_blank" style="color:#6b8c42;">🔗 link</a>' : '';
-    return '<li>⭐ <strong>' + d.nome + '</strong> — R$ ' + Number(d.valor).toFixed(2) + linkTxt + ' ' + badge +
+    var linkTxt = linkSeguro(d.link) ? ' <a href="' + escaparHtml(d.link) + '" target="_blank" rel="noopener noreferrer" style="color:#6b8c42;">🔗 link</a>' : '';
+    return '<li>⭐ <strong>' + escaparHtml(d.nome) + '</strong> — R$ ' + Number(d.valor).toFixed(2) + linkTxt + ' ' + badge +
     '<button class="btn btn-danger" style="margin-left:auto;" onclick="removerItem(\'desejos\',' + i + ')">🗑️</button></li>';
   }).join('');
   document.getElementById('listaDesejos').innerHTML = desejosHtml || '<li style="color:#9aab8a; border-left-color:#eee;">Nenhum desejo ainda. ✨</li>';
@@ -622,7 +653,7 @@ function atualizarTudo(){
       var ev = estado.eventos[e];
       var meses3 = mesesAteEvento(ev);
       var porMes3 = ev.valor / meses3;
-      listaEv += '<li>🎁 <strong>' + ev.nome + '</strong> — R$ ' + Number(ev.valor).toFixed(2) + ' em ' + ev.dataStr +
+      listaEv += '<li>🎁 <strong>' + escaparHtml(ev.nome) + '</strong> — R$ ' + Number(ev.valor).toFixed(2) + ' em ' + escaparHtml(ev.dataStr) +
       ' <span class="mini-badge">📅 R$ ' + porMes3.toFixed(2) + '/mês x' + meses3 + '</span>' +
       '<button class="btn btn-danger" style="margin-left:auto;" onclick="removerItem(\'eventos\',' + e + ')">🗑️</button></li>';
     }
@@ -681,6 +712,24 @@ function renderCalendario(){
 
 /* =========== INIT =========== */
 atualizarTudo();
+
+// Carrega os gastos avulsos do banco para que tela e banco mostrem o mesmo.
+async function carregarGastosAvulsos() {
+  try {
+    var resposta = await fetch('/api/despesas');
+    if (!resposta.ok) return;
+    var despesas = await resposta.json();
+    estado.gastosAvulsos = despesas.map(function (d) {
+      return { id: d.id, nome: d.descricao, valor: d.valor };
+    });
+    salvarEstado();
+    atualizarTudo();
+  } catch (erro) {
+    // Sem servidor (index.html aberto direto): mantém os dados do navegador.
+    console.warn('API indisponível:', erro);
+  }
+}
+carregarGastosAvulsos();
 </script>
 </body>
 </html>

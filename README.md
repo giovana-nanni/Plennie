@@ -35,12 +35,12 @@ O projeto está sendo desenvolvido com foco em sua utilização em dispositivos 
 plennie/
 ├── app.py
 ├── database.py
-├── plennie.db
 ├── index.html
-├── index-backup.html
+├── requirements.txt
 ├── teste_api.py
 ├── README.md
-└── .venv/
+├── plennie.db      (criado ao executar database.py; não vai para o Git)
+└── .venv/          (criado na instalação; não vai para o Git)
 ```
 
 **Descrição dos principais arquivos:**
@@ -49,7 +49,6 @@ plennie/
 - `database.py`: configuração da conexão com o banco de dados e criação das tabelas.
 - `plennie.db`: banco de dados SQLite utilizado durante o desenvolvimento.
 - `index.html`: interface principal da aplicação.
-- `index-backup.html`: cópia de segurança da interface original.
 - `teste_api.py`: script utilizado para testar o cadastro de despesas pela API.
 - `.venv/`: ambiente virtual Python com as dependências do projeto.
 
@@ -75,6 +74,7 @@ A API disponibiliza, nesta etapa, os seguintes endpoints:
 |---|---|---|
 | GET | `/api/despesas` | Consultar despesas cadastradas |
 | POST | `/api/despesas` | Cadastrar uma nova despesa |
+| DELETE | `/api/despesas/<id>` | Excluir uma despesa |
 
 A API também realiza validações básicas dos dados enviados antes de efetuar o cadastro.
 
@@ -119,13 +119,13 @@ A API também realiza validações básicas dos dados enviados antes de efetuar 
 Clone o repositório:
 
 ```bash
-git clone https://github.com/m4riaeduarda-dev/plennie.git
+git clone https://github.com/giovana-nanni/Plennie.git
 ```
 
 Entre na pasta do projeto:
 
 ```bash
-cd plennie
+cd Plennie
 ```
 
 Crie o ambiente virtual:
@@ -134,10 +134,10 @@ Crie o ambiente virtual:
 python -m venv .venv
 ```
 
-Instale o Flask:
+Instale as dependências:
 
 ```bash
-.venv\Scripts\python.exe -m pip install Flask
+.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
 Prepare o banco de dados:

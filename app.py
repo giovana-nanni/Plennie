@@ -1,4 +1,6 @@
 
+import os
+
 from flask import Flask, jsonify, request, send_from_directory
 from database import conectar, criar_tabelas
 
@@ -73,5 +75,19 @@ def cadastrar_despesa():
     }), 201
 
 
+@app.route("/api/despesas/<int:despesa_id>", methods=["DELETE"])
+def excluir_despesa(despesa_id):
+    with conectar() as conexao:
+        cursor = conexao.execute(
+            "DELETE FROM despesas WHERE id = ?", (despesa_id,)
+        )
+
+    if cursor.rowcount == 0:
+        return jsonify({"erro": "Despesa não encontrada."}), 404
+
+    return jsonify({"mensagem": "Despesa excluída com sucesso!"})
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    # O modo debug só deve ser ligado em desenvolvimento: FLASK_DEBUG=1
+    app.run(debug=os.environ.get("FLASK_DEBUG") == "1")
