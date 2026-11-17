@@ -1,6 +1,6 @@
 # Plennie
 
-Aplicativo de organização financeira pessoal — projeto acadêmico do curso de Análise e Desenvolvimento de Sistemas.
+Aplicativo web de organização financeira pessoal, desenvolvido como projeto acadêmico do curso de Análise e Desenvolvimento de Sistemas da Faculdade Anhanguera.
 
 ## Sobre
 
@@ -15,6 +15,7 @@ O Plennie auxilia usuários na organização de finanças pessoais com interface
 - **Versionamento:** Git + GitHub
 
 ## Estrutura
+
 plennie/
 ├── app.py # API Flask (auth + CRUD de despesas)
 ├── database.py # Conexão e criação de tabelas
