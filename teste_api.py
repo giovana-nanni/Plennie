@@ -1,11 +1,4 @@
-"""Teste integrado da API do Plennie (cobre CT01–CT06 da seção 9.1).
 
-Uso:
-    python app.py          # em um terminal
-    python teste_api.py    # em outro
-
-Retorna exit code 0 se tudo passou, 1 se algo falhou.
-"""
 import json
 import sys
 from datetime import date
